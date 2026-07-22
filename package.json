@@ -1,0 +1,17 @@
+{
+  "name": "automation-exercise-api-postman",
+  "version": "1.0.0",
+  "description": "Postman/Newman API test collection for automationexercise.com — companion project to the Playwright automation framework in the same portfolio. QA Engineer portfolio piece.",
+  "scripts": {
+    "test": "newman run collections/AutomationExercise.postman_collection.json -e environments/production.postman_environment.json",
+    "test:report": "newman run collections/AutomationExercise.postman_collection.json -e environments/production.postman_environment.json -r cli,htmlextra --reporter-htmlextra-export reports/run-report.html",
+    "test:local-mock": "newman run collections/AutomationExercise.postman_collection.json -e environments/local-mock.postman_environment.json",
+    "mock-server": "node mock-server/server.js"
+  },
+  "author": "Pavlo Lysenko",
+  "license": "MIT",
+  "devDependencies": {
+    "newman": "^6.2.2",
+    "newman-reporter-htmlextra": "^1.23.1"
+  }
+}

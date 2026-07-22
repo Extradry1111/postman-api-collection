@@ -1,0 +1,607 @@
+{
+  "info": {
+    "name": "Automation Exercise API",
+    "description": "API test collection for automationexercise.com — covers product/brand catalog endpoints and the full account lifecycle (create, login, update, delete), including negative cases (wrong HTTP verb, missing required parameters).\n\nCompanion project to the Playwright automation framework in the same portfolio — same API, validated two ways: as executable TypeScript tests (CI-integrated) and as a Postman/Newman collection (the tool many teams still use for quick manual API checks and smoke suites). Both should agree on expected behavior; if they ever don't, that's worth investigating on its own.\n\nRun order matters: 'Create Account' must run before 'Verify Login (valid)', 'Get User Detail', 'Update Account', and 'Delete Account (cleanup)', since those depend on the account it creates. Newman/Collection Runner executes folders top-to-bottom, so the numbered folder prefixes (01, 02, 03) enforce that order.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "https://automationexercise.com/api" },
+    { "key": "dynamic_email", "value": "" },
+    { "key": "dynamic_password", "value": "" },
+    { "key": "dynamic_name", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 - Account Setup",
+      "item": [
+        {
+          "name": "Create Account",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Generate a unique test user per run, the same way the Playwright suite's",
+                  "// userFactory.ts does — a hardcoded fixture email works exactly once against",
+                  "// this API, then poisons every later run with 'Email Address already exist!'.",
+                  "const timestamp = Date.now();",
+                  "const randomSuffix = Math.random().toString(36).substring(2, 8);",
+                  "const email = `qa.postman.${timestamp}.${randomSuffix}@mailinator.com`;",
+                  "const name = `Postman Tester ${randomSuffix}`;",
+                  "const password = `Pw${randomSuffix}!23`;",
+                  "",
+                  "pm.collectionVariables.set('dynamic_email', email);",
+                  "pm.collectionVariables.set('dynamic_name', name);",
+                  "pm.collectionVariables.set('dynamic_password', password);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 201 (user created)', () => {",
+                  "  pm.expect(body.responseCode).to.eql(201);",
+                  "});",
+                  "",
+                  "pm.test('message confirms user creation', () => {",
+                  "  pm.expect(body.message.toLowerCase()).to.include('user created');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "name", "value": "{{dynamic_name}}" },
+                { "key": "email", "value": "{{dynamic_email}}" },
+                { "key": "password", "value": "{{dynamic_password}}" },
+                { "key": "title", "value": "Mr" },
+                { "key": "birth_date", "value": "15" },
+                { "key": "birth_month", "value": "6" },
+                { "key": "birth_year", "value": "1995" },
+                { "key": "firstname", "value": "Postman" },
+                { "key": "lastname", "value": "Tester" },
+                { "key": "company", "value": "QA Portfolio" },
+                { "key": "address1", "value": "123 Test Street" },
+                { "key": "address2", "value": "" },
+                { "key": "country", "value": "United States" },
+                { "key": "zipcode", "value": "10001" },
+                { "key": "state", "value": "New York" },
+                { "key": "city", "value": "New York" },
+                { "key": "mobile_number", "value": "+15550001234" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/createAccount",
+              "host": ["{{base_url}}"],
+              "path": ["createAccount"]
+            },
+            "description": "Creates a fresh account for this test run. The pre-request script generates a unique email/name/password so the collection can run repeatedly (locally or in CI) without colliding with a previous run's account."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Products & Brands",
+      "item": [
+        {
+          "name": "Get All Products List",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 200', () => {",
+                  "  pm.expect(body.responseCode).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('products is a non-empty array', () => {",
+                  "  pm.expect(body.products).to.be.an('array');",
+                  "  pm.expect(body.products.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test('first product has the expected shape', () => {",
+                  "  const product = body.products[0];",
+                  "  pm.expect(product).to.have.property('id');",
+                  "  pm.expect(product).to.have.property('name');",
+                  "  pm.expect(product).to.have.property('price');",
+                  "  pm.expect(product).to.have.property('brand');",
+                  "  pm.expect(product).to.have.property('category');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/productsList",
+              "host": ["{{base_url}}"],
+              "path": ["productsList"]
+            }
+          }
+        },
+        {
+          "name": "POST Products List (negative - wrong verb)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Documented quirk (see SAMPLE_BUG_REPORT in the companion Playwright repo):",
+                  "// this API returns HTTP 200 even for a disallowed verb, and only signals the",
+                  "// real error via responseCode in the JSON body. Asserting on that explicitly,",
+                  "// with a comment, so a future reader doesn't 'fix' this into an HTTP status",
+                  "// check and silently break the test.",
+                  "pm.test('HTTP status is 200 (API does not use real status codes here)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 405 (method not supported)', () => {",
+                  "  pm.expect(body.responseCode).to.eql(405);",
+                  "});",
+                  "",
+                  "pm.test('message explains the method is not supported', () => {",
+                  "  pm.expect(body.message.toLowerCase()).to.include('not supported');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/productsList",
+              "host": ["{{base_url}}"],
+              "path": ["productsList"]
+            }
+          }
+        },
+        {
+          "name": "Get All Brands List",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 200', () => {",
+                  "  pm.expect(body.responseCode).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('brands is a non-empty array', () => {",
+                  "  pm.expect(body.brands).to.be.an('array');",
+                  "  pm.expect(body.brands.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/brandsList",
+              "host": ["{{base_url}}"],
+              "path": ["brandsList"]
+            }
+          }
+        },
+        {
+          "name": "PUT Brands List (negative - wrong verb)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 405 (method not supported)', () => {",
+                  "  pm.expect(body.responseCode).to.eql(405);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/brandsList",
+              "host": ["{{base_url}}"],
+              "path": ["brandsList"]
+            }
+          }
+        },
+        {
+          "name": "Search Product - valid term",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 200', () => {",
+                  "  pm.expect(body.responseCode).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('products is an array', () => {",
+                  "  pm.expect(body.products).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [{ "key": "search_product", "value": "Dress" }]
+            },
+            "url": {
+              "raw": "{{base_url}}/searchProduct",
+              "host": ["{{base_url}}"],
+              "path": ["searchProduct"]
+            }
+          }
+        },
+        {
+          "name": "Search Product - missing parameter (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 400 (bad request)', () => {",
+                  "  pm.expect(body.responseCode).to.eql(400);",
+                  "});",
+                  "",
+                  "pm.test('message names the missing parameter', () => {",
+                  "  pm.expect(body.message.toLowerCase()).to.include('search_product parameter is missing');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": { "mode": "urlencoded", "urlencoded": [] },
+            "url": {
+              "raw": "{{base_url}}/searchProduct",
+              "host": ["{{base_url}}"],
+              "path": ["searchProduct"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Account Verification",
+      "item": [
+        {
+          "name": "Verify Login - valid credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 200', () => {",
+                  "  pm.expect(body.responseCode).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('message confirms the user exists', () => {",
+                  "  pm.expect(body.message.toLowerCase()).to.include('user exists');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "email", "value": "{{dynamic_email}}" },
+                { "key": "password", "value": "{{dynamic_password}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/verifyLogin",
+              "host": ["{{base_url}}"],
+              "path": ["verifyLogin"]
+            },
+            "description": "Depends on '01 - Account Setup > Create Account' having run first in this same collection run, since it relies on {{dynamic_email}}/{{dynamic_password}}."
+          }
+        },
+        {
+          "name": "Verify Login - invalid credentials (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 404 (user not found)', () => {",
+                  "  pm.expect(body.responseCode).to.eql(404);",
+                  "});",
+                  "",
+                  "pm.test('message says user not found', () => {",
+                  "  pm.expect(body.message.toLowerCase()).to.include('user not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "email", "value": "not-a-real-user@example.com" },
+                { "key": "password", "value": "wrong-password-123" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/verifyLogin",
+              "host": ["{{base_url}}"],
+              "path": ["verifyLogin"]
+            }
+          }
+        },
+        {
+          "name": "Verify Login - missing email parameter (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 400', () => {",
+                  "  pm.expect(body.responseCode).to.eql(400);",
+                  "});",
+                  "",
+                  "pm.test('message mentions a missing parameter', () => {",
+                  "  pm.expect(body.message.toLowerCase()).to.include('missing');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [{ "key": "password", "value": "some-password" }]
+            },
+            "url": {
+              "raw": "{{base_url}}/verifyLogin",
+              "host": ["{{base_url}}"],
+              "path": ["verifyLogin"]
+            }
+          }
+        },
+        {
+          "name": "DELETE Verify Login (negative - wrong verb)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 405', () => {",
+                  "  pm.expect(body.responseCode).to.eql(405);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/verifyLogin",
+              "host": ["{{base_url}}"],
+              "path": ["verifyLogin"]
+            }
+          }
+        },
+        {
+          "name": "Get User Detail By Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('returned user matches the created account email', () => {",
+                  "  pm.expect(body.user.email).to.eql(pm.collectionVariables.get('dynamic_email'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/getUserDetailByEmail?email={{dynamic_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["getUserDetailByEmail"],
+              "query": [{ "key": "email", "value": "{{dynamic_email}}" }]
+            }
+          }
+        },
+        {
+          "name": "Update Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 200', () => {",
+                  "  pm.expect(body.responseCode).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('message confirms the update', () => {",
+                  "  pm.expect(body.message.toLowerCase()).to.include('user updated');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "name", "value": "{{dynamic_name}}" },
+                { "key": "email", "value": "{{dynamic_email}}" },
+                { "key": "password", "value": "{{dynamic_password}}" },
+                { "key": "title", "value": "Mr" },
+                { "key": "birth_date", "value": "15" },
+                { "key": "birth_month", "value": "6" },
+                { "key": "birth_year", "value": "1995" },
+                { "key": "firstname", "value": "Updated" },
+                { "key": "lastname", "value": "Tester" },
+                { "key": "company", "value": "QA Portfolio" },
+                { "key": "address1", "value": "456 Updated Street" },
+                { "key": "address2", "value": "" },
+                { "key": "country", "value": "United States" },
+                { "key": "zipcode", "value": "10001" },
+                { "key": "state", "value": "New York" },
+                { "key": "city", "value": "New York" },
+                { "key": "mobile_number", "value": "+15550001234" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/updateAccount",
+              "host": ["{{base_url}}"],
+              "path": ["updateAccount"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Cleanup",
+      "item": [
+        {
+          "name": "Delete Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('responseCode is 200', () => {",
+                  "  pm.expect(body.responseCode).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test('message confirms account deletion', () => {",
+                  "  pm.expect(body.message.toLowerCase()).to.include('account deleted');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "email", "value": "{{dynamic_email}}" },
+                { "key": "password", "value": "{{dynamic_password}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/deleteAccount",
+              "host": ["{{base_url}}"],
+              "path": ["deleteAccount"]
+            },
+            "description": "Runs last, deliberately, so repeated collection runs (local or CI) don't accumulate orphaned test accounts on the shared public target site."
+          }
+        }
+      ]
+    }
+  ]
+}
