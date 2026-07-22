@@ -10,6 +10,18 @@
     { "key": "dynamic_password", "value": "" },
     { "key": "dynamic_name", "value": "" }
   ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'User-Agent', value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' });",
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json, text/plain, */*' });"
+        ]
+      }
+    }
+  ],
   "item": [
     {
       "name": "01 - Account Setup",
