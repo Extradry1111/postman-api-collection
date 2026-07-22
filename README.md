@@ -2,7 +2,7 @@
 
 A Postman collection covering the [automationexercise.com](https://automationexercise.com)
 REST API — the same target API as the
-[Playwright automation framework](../qa-automation-framework) in this portfolio,
+[Playwright automation framework]((https://github.com/Extradry1111/qa-automation-framework)) in this portfolio,
 tested through a different tool.
 
 ## Why this exists alongside a code-based API test suite
@@ -53,7 +53,7 @@ matter how many times this collection gets run in CI or locally.
 automationexercise.com's API returns HTTP 200 even for disallowed verbs and
 malformed requests — the real error only shows up as `responseCode` inside
 the JSON body. See
-[`../qa-automation-framework/docs/SAMPLE_BUG_REPORT.md`](../qa-automation-framework/docs/SAMPLE_BUG_REPORT.md)
+[`../qa-automation-framework/docs/SAMPLE_BUG_REPORT.md`]((https://github.com/Extradry1111/qa-automation-framework/blob/main/docs/SAMPLE_BUG_REPORT.md))
 for the full write-up. Every test that hits this quirk has an inline comment
 explaining it, so a future maintainer doesn't "fix" the assertion into a
 standard HTTP-status check and silently break the test.
